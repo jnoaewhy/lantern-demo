@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff App - The Lantern</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #14532d 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        #root {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Animated background blobs */
+        .bg-blobs {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            filter: blur(60px);
+            animation: blob 7s infinite;
+        }
+
+        .blob-1 {
+            top: -160px;
+            right: -160px;
+            width: 320px;
+            height: 320px;
+            background: #10b981;
+            opacity: 0.2;
+        }
+
+        .blob-2 {
+            bottom: -160px;
+            left: -160px;
+            width: 320px;
+            height: 320px;
+            background: #22c55e;
+            opacity: 0.2;
+            animation-delay: 2s;
+        }
+
+        .blob-3 {
+            top: 20%;
+            left: 20%;
+            width: 240px;
+            height: 240px;
+            background: #84cc16;
+            opacity: 0.15;
+            animation-delay: 4s;
+        }
+
+        @keyframes blob {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+        }
+
+        .glass-dark {
+            background: rgba(6, 78, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 30px rgba(16, 185, 129, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid #6ee7b7;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .task-card {
+            transition: all 0.3s ease;
+        }
+
+        .task-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        .chat-bubble {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            max-width: 80%;
+        }
+
+        .chat-bubble-received {
+            background: rgba(16, 185, 129, 0.2);
+            margin-right: auto;
+        }
+
+        .chat-bubble-sent {
+            background: rgba(34, 197, 94, 0.3);
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function StaffApp() {
+            const [currentScreen, setCurrentScreen] = useState('home');
+            const [isClockedIn, setIsClockedIn] = useState(true);
+            const [shiftTimer, setShiftTimer] = useState('0:00:00');
+            const [selectedChat, setSelectedChat] = useState(null);
+            const [showEmergency, setShowEmergency] = useState(false);
+
+            const employeeData = {
+                name: 'Marcus Johnson',
+                role: 'Gaming Tech',
+                shift: '2PM-10PM',
+                area: 'Gaming Floor',
+                id: 'LT-2047',
+                performance: 95
+            };
+
+            const tasks = [
+                { id: 1, title: 'Station 7 maintenance check', priority: 'high', area: 'Gaming Floor', time: '15 mins ago', status: 'pending' },
+                { id: 2, title: 'Restock printer paper - Station 3', priority: 'medium', area: 'Gaming Floor', time: '45 mins ago', status: 'pending' },
+                { id: 3, title: 'Help new customer with DDR setup', priority: 'normal', area: 'Gaming Floor', time: '5 mins ago', status: 'pending' }
+            ];
+
+            const chatChannels = [
+                { id: 'all', name: 'All Staff', unread: 3, lastMsg: 'Shift change at 10PM' },
+                { id: 'gaming', name: 'Gaming Tech Team', unread: 1, lastMsg: 'Station 12 is back online' },
+                { id: 'managers', name: 'Management', unread: 0, lastMsg: 'Great work today team!' },
+                { id: 'maintenance', name: 'Maintenance Alerts', unread: 2, lastMsg: 'Printer 3 needs attention' }
+            ];
+
+            // Shift timer
+            useEffect(() => {
+                if (isClockedIn) {
+                    const interval = setInterval(() => {
+                        const start = new Date();
+                        start.setHours(14, 3, 0);
+                        const now = new Date();
+                        const diff = now - start;
+                        const hours = Math.floor(diff / 3600000);
+                        const minutes = Math.floor((diff % 3600000) / 60000);
+                        const seconds = Math.floor((diff % 60000) / 1000);
+                        setShiftTimer(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                    }, 1000);
+                    return () => clearInterval(interval);
+                }
+            }, [isClockedIn]);
+
+            return (
+                <div style={{ paddingBottom: '80px', minHeight: '100vh' }}>
+                    {currentScreen === 'home' && <HomeScreen 
+                        employeeData={employeeData}
+                        tasks={tasks}
+                        isClockedIn={isClockedIn}
+                        shiftTimer={shiftTimer}
+                        onNavigate={setCurrentScreen}
+                        onToggleClock={() => setIsClockedIn(!isClockedIn)}
+                        onShowEmergency={() => setShowEmergency(true)}
+                    />}
+                    {currentScreen === 'tasks' && <TasksScreen tasks={tasks} onBack={() => setCurrentScreen('home')} />}
+                    {currentScreen === 'chat' && <ChatScreen channels={chatChannels} selectedChat={selectedChat} onSelectChat={setSelectedChat} onBack={() => setCurrentScreen('home')} />}
+                    
+                    {showEmergency && <EmergencyPanel onClose={() => setShowEmergency(false)} />}
+                    
+                    <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} />
+                </div>
+            );
+        }
+
+        function HomeScreen({ employeeData, tasks, isClockedIn, shiftTimer, onNavigate, onToggleClock, onShowEmergency }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    {/* Header */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#6ee7b7', marginBottom: '4px' }}>
+                            👔 Staff Command
+                        </h1>
+                        <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                            {employeeData.name} • {employeeData.role}
+                        </p>
+                    </div>
+
+                    {/* Clock Status */}
+                    <div className="glass-dark" style={{ padding: '24px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>
+                                    {isClockedIn ? 'Clocked In' : 'Clocked Out'}
+                                </div>
+                                <div style={{ fontSize: '32px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                    {isClockedIn ? shiftTimer : '--:--:--'}
+                                </div>
+                            </div>
+                            <div className="animate-pulse" style={{
+                                width: '48px',
+                                height: '48px',
+                                background: isClockedIn ? '#10b981' : '#6b7280',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '24px'
+                            }}>
+                                ⏱️
+                            </div>
+                        </div>
+                        <button 
+                            className={isClockedIn ? 'btn btn-danger' : 'btn btn-primary'}
+                            onClick={onToggleClock}
+                            style={{ width: '100%' }}
+                        >
+                            {isClockedIn ? 'Clock Out' : 'Clock In'}
+                        </button>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                        <div className="glass" style={{ padding: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981' }}>{tasks.length}</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>Active Tasks</div>
+                        </div>
+                        <div className="glass" style={{ padding: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981' }}>{employeeData.performance}%</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>Performance</div>
+                        </div>
+                        <div className="glass" style={{ padding: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981' }}>12</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>Completed</div>
+                        </div>
+                    </div>
+
+                    {/* Urgent Tasks */}
+                    <h2 style={{ fontSize: '18px', fontFamily: 'Orbitron', color: '#6ee7b7', marginBottom: '12px' }}>
+                        🔥 Urgent Tasks
+                    </h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                        {tasks.filter(t => t.priority === 'high').map(task => (
+                            <div key={task.id} className="glass-dark task-card" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontWeight: 700, color: '#ef4444' }}>HIGH PRIORITY</span>
+                                    <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>{task.time}</span>
+                                </div>
+                                <h3 style={{ fontSize: '16px', marginBottom: '8px' }}>{task.title}</h3>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '12px', color: '#6ee7b7' }}>📍 {task.area}</span>
+                                    <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '12px' }}>
+                                        Start
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Emergency Button */}
+                    <button 
+                        className="btn btn-danger"
+                        onClick={onShowEmergency}
+                        style={{ width: '100%', padding: '16px', fontSize: '16px' }}
+                    >
+                        🚨 EMERGENCY ALERT
+                    </button>
+                </div>
+            );
+        }
+
+        function TasksScreen({ tasks, onBack }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                        ← Back
+                    </button>
+                    <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#6ee7b7', marginBottom: '20px' }}>
+                        📋 All Tasks
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {tasks.map(task => (
+                            <div key={task.id} className="glass-dark" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ 
+                                        fontWeight: 700, 
+                                        fontSize: '12px',
+                                        color: task.priority === 'high' ? '#ef4444' : task.priority === 'medium' ? '#f59e0b' : '#6ee7b7'
+                                    }}>
+                                        {task.priority.toUpperCase()}
+                                    </span>
+                                    <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>{task.time}</span>
+                                </div>
+                                <h3 style={{ fontSize: '16px', marginBottom: '8px' }}>{task.title}</h3>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '12px', color: '#6ee7b7' }}>📍 {task.area}</span>
+                                    <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '12px' }}>
+                                        Complete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function ChatScreen({ channels, selectedChat, onSelectChat, onBack }) {
+            if (!selectedChat) {
+                return (
+                    <div className="fade-in" style={{ padding: '20px' }}>
+                        <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                            ← Back
+                        </button>
+                        <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#6ee7b7', marginBottom: '20px' }}>
+                            💬 Team Chat
+                        </h1>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {channels.map(channel => (
+                                <div 
+                                    key={channel.id} 
+                                    className="glass-dark" 
+                                    style={{ padding: '16px', cursor: 'pointer' }}
+                                    onClick={() => onSelectChat(channel.id)}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <h3 style={{ fontSize: '16px', fontWeight: 700 }}>{channel.name}</h3>
+                                        {channel.unread > 0 && (
+                                            <span style={{
+                                                background: '#ef4444',
+                                                color: 'white',
+                                                borderRadius: '50%',
+                                                width: '24px',
+                                                height: '24px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '12px',
+                                                fontWeight: 700
+                                            }}>
+                                                {channel.unread}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>{channel.lastMsg}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            const channel = channels.find(c => c.id === selectedChat);
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    <button className="btn btn-secondary" onClick={() => onSelectChat(null)} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                        ← Back to Channels
+                    </button>
+                    <h1 style={{ fontSize: '24px', fontFamily: 'Orbitron', color: '#6ee7b7', marginBottom: '20px' }}>
+                        {channel.name}
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="chat-bubble chat-bubble-received">
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Sarah Chen</div>
+                            <div>Station 12 maintenance complete!</div>
+                        </div>
+                        <div className="chat-bubble chat-bubble-sent">
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>You</div>
+                            <div>Great work! All clear on my end too.</div>
+                        </div>
+                        <div className="chat-bubble chat-bubble-received">
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Sarah Chen</div>
+                            <div>{channel.lastMsg}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function EmergencyPanel({ onClose }) {
+            return (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
+                    <div className="glass-dark" style={{ 
+                        padding: '32px', 
+                        maxWidth: '400px',
+                        border: '2px solid #ef4444'
+                    }}>
+                        <h2 style={{ fontSize: '24px', fontFamily: 'Orbitron', color: '#ef4444', marginBottom: '16px', textAlign: 'center' }}>
+                            🚨 EMERGENCY ALERT
+                        </h2>
+                        <p style={{ fontSize: '16px', marginBottom: '24px', textAlign: 'center' }}>
+                            Select emergency type:
+                        </p>
+                        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>🔥 Fire / Safety</button>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>🚑 Medical Emergency</button>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>⚠️ Security Threat</button>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>🔧 Critical Equipment</button>
+                        </div>
+                        <button className="btn btn-secondary" onClick={onClose} style={{ width: '100%' }}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function BottomNav({ currentScreen, onNavigate }) {
+            const navItems = [
+                { id: 'home', label: 'Home', emoji: '🏠' },
+                { id: 'tasks', label: 'Tasks', emoji: '📋' },
+                { id: 'chat', label: 'Chat', emoji: '💬' },
+            ];
+
+            return (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(6, 78, 59, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderTop: '1px solid rgba(16, 185, 129, 0.3)',
+                    padding: '12px 16px',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        maxWidth: '430px',
+                        margin: '0 auto'
+                    }}>
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onNavigate(item.id)}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '8px 16px',
+                                    background: currentScreen === item.id ? 'rgba(16, 185, 129, 0.3)' : 'transparent',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    color: currentScreen === item.id ? '#6ee7b7' : 'rgba(255, 255, 255, 0.6)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
+                                <div style={{ fontSize: '24px' }}>{item.emoji}</div>
+                                <span style={{ fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<StaffApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

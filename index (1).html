@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Lantern - Complete Platform Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a0b2e 50%, #0f172a 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Animated background */
+        .bg-blobs {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            filter: blur(60px);
+            animation: blob 7s infinite;
+        }
+
+        .blob-1 {
+            top: -160px;
+            right: -160px;
+            width: 320px;
+            height: 320px;
+            background: #ff006e;
+            opacity: 0.15;
+        }
+
+        .blob-2 {
+            bottom: -160px;
+            left: -160px;
+            width: 320px;
+            height: 320px;
+            background: #8338ec;
+            opacity: 0.15;
+            animation-delay: 2s;
+        }
+
+        .blob-3 {
+            top: 50%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            background: #00f5ff;
+            opacity: 0.1;
+            animation-delay: 4s;
+        }
+
+        @keyframes blob {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* CRT Scanline */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(42px, 10vw, 64px);
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff006e, #8338ec, #00f5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            text-shadow: 0 0 40px rgba(255, 0, 110, 0.4);
+            animation: neonPulse 3s infinite alternate;
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+
+        .subtitle {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 20px;
+            color: #00f5ff;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .apps-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .app-card {
+            background: rgba(26, 10, 46, 0.6);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 0, 110, 0.3);
+            border-radius: 20px;
+            padding: 28px 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .app-card:hover::before {
+            left: 100%;
+        }
+
+        .app-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--card-color);
+            box-shadow: 0 12px 40px var(--card-shadow);
+        }
+
+        .app-card.patron {
+            --card-color: #ff006e;
+            --card-shadow: rgba(255, 0, 110, 0.4);
+        }
+
+        .app-card.staff {
+            --card-color: #10b981;
+            --card-shadow: rgba(16, 185, 129, 0.4);
+        }
+
+        .app-card.management {
+            --card-color: #06b6d4;
+            --card-shadow: rgba(6, 182, 212, 0.4);
+        }
+
+        .app-card.owner {
+            --card-color: #f59e0b;
+            --card-shadow: rgba(245, 158, 11, 0.4);
+        }
+
+        .app-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            display: block;
+            text-align: center;
+        }
+
+        .app-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .app-jp-name {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 14px;
+            color: var(--card-color);
+            text-align: center;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        .app-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .app-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .feature-tag {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 11px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 32px 20px;
+            background: rgba(26, 10, 46, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 16px;
+        }
+
+        .footer-title {
+            font-size: 14px;
+            color: #00f5ff;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .footer-text {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .footer-link {
+            color: #ff006e;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #00f5ff;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.6);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 16px;
+            }
+            
+            .header {
+                margin-bottom: 40px;
+            }
+
+            .app-features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">THE LANTERN</h1>
+            <p class="subtitle">ザ・ランタン</p>
+            <p class="description">Complete 4-App Platform Demo</p>
+        </div>
+
+        <div class="apps-grid">
+            <!-- Patron App -->
+            <a href="patron-app.html" style="text-decoration: none; color: inherit;">
+                <div class="app-card patron">
+                    <div class="app-icon">🎮</div>
+                    <h2 class="app-name">Patron App</h2>
+                    <p class="app-jp-name">パトロン</p>
+                    <p class="app-desc">Customer Experience Platform</p>
+                    <div class="app-features">
+                        <div class="feature-tag">Games & Karaoke</div>
+                        <div class="feature-tag">Rewards System</div>
+                        <div class="feature-tag">Social Features</div>
+                        <div class="feature-tag">Smart Wallet</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Staff App -->
+            <a href="staff-app.html" style="text-decoration: none; color: inherit;">
+                <div class="app-card staff">
+                    <div class="app-icon">👔</div>
+                    <h2 class="app-name">Staff App</h2>
+                    <p class="app-jp-name">スタッフ</p>
+                    <p class="app-desc">Operations Management</p>
+                    <div class="app-features">
+                        <div class="feature-tag">Clock In/Out</div>
+                        <div class="feature-tag">Task Management</div>
+                        <div class="feature-tag">Team Chat</div>
+                        <div class="feature-tag">Emergency Alerts</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Management App -->
+            <a href="management-app.html" style="text-decoration: none; color: inherit;">
+                <div class="app-card management">
+                    <div class="app-icon">📊</div>
+                    <h2 class="app-name">Management App</h2>
+                    <p class="app-jp-name">管理</p>
+                    <p class="app-desc">Analytics & Oversight</p>
+                    <div class="app-features">
+                        <div class="feature-tag">Live Dashboard</div>
+                        <div class="feature-tag">Staff Oversight</div>
+                        <div class="feature-tag">Revenue Tracking</div>
+                        <div class="feature-tag">Hardware Monitor</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Owner App -->
+            <a href="owner-app.html" style="text-decoration: none; color: inherit;">
+                <div class="app-card owner">
+                    <div class="app-icon">👑</div>
+                    <h2 class="app-name">Owner App</h2>
+                    <p class="app-jp-name">オーナー</p>
+                    <p class="app-desc">God Mode Control</p>
+                    <div class="app-features">
+                        <div class="feature-tag">Financial Overview</div>
+                        <div class="feature-tag">Approvals</div>
+                        <div class="feature-tag">System Control</div>
+                        <div class="feature-tag">Broadcasting</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p class="footer-title">Built by JaQuan Earls</p>
+            <p class="footer-text">
+                Full-Stack Platform • React Native • Node.js • PostgreSQL<br>
+                Powered by Last Light backend infrastructure
+            </p>
+            <a href="https://github.com/jnoaewhy/LastLight-Platform" target="_blank" rel="noopener noreferrer" class="footer-link">
+                View Source Code on GitHub →
+            </a>
+        </div>
+    </div>
+</body>
+</html>

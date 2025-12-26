@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner App - The Lantern</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #78350f 50%, #92400e 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        #root {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .bg-blobs {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            filter: blur(60px);
+            animation: blob 7s infinite;
+        }
+
+        .blob-1 {
+            top: -160px;
+            right: -160px;
+            width: 320px;
+            height: 320px;
+            background: #f59e0b;
+            opacity: 0.2;
+        }
+
+        .blob-2 {
+            bottom: -160px;
+            left: -160px;
+            width: 320px;
+            height: 320px;
+            background: #d97706;
+            opacity: 0.2;
+            animation-delay: 2s;
+        }
+
+        .blob-3 {
+            top: 20%;
+            left: 20%;
+            width: 240px;
+            height: 240px;
+            background: #eab308;
+            opacity: 0.15;
+            animation-delay: 4s;
+        }
+
+        @keyframes blob {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+        }
+
+        .glass-dark {
+            background: rgba(120, 53, 15, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 30px rgba(245, 158, 11, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+        }
+
+        .crown-glow {
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(245, 158, 11, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function OwnerApp() {
+            const [currentScreen, setCurrentScreen] = useState('dashboard');
+            const [showBroadcast, setShowBroadcast] = useState(false);
+            const [showOverride, setShowOverride] = useState(false);
+
+            const [empireData, setEmpireData] = useState({
+                revenueToday: 8247.50,
+                revenueWeek: 54839.25,
+                revenueMonth: 234567.80,
+                profitMargin: 32.4,
+                occupancy: 78,
+                staffOnDuty: 12,
+                equipmentHealth: 94,
+                satisfaction: 96.2,
+                pendingApprovals: 7,
+                activeIncidents: 2,
+                burnRate: 12847.50,
+                runwayMonths: 24
+            });
+
+            const revenueStreams = [
+                { category: 'Gaming Stations', today: 3250.00, trend: '+15.2%', margin: 68 },
+                { category: 'Karaoke Rooms', today: 2890.00, trend: '+8.7%', margin: 71 },
+                { category: 'Food & Beverage', today: 1807.50, trend: '+12.4%', margin: 42 },
+                { category: 'Merchandise', today: 300.00, trend: '+22.1%', margin: 55 }
+            ];
+
+            const pendingApprovals = [
+                { id: 1, type: 'Time Off Request', employee: 'Sarah Chen', priority: 'medium', time: '2 hours ago' },
+                { id: 2, type: 'Equipment Purchase', amount: 2500.00, priority: 'high', time: '4 hours ago' },
+                { id: 3, type: 'Vendor Contract', vendor: 'Ramen Supplier Co', amount: 5000.00, priority: 'high', time: '1 day ago' }
+            ];
+
+            const activeIncidents = [
+                { id: 1, type: 'Equipment', severity: 'medium', desc: 'Printer 3 low on paper', time: '15 mins ago' },
+                { id: 2, type: 'Customer', severity: 'low', desc: 'Billing dispute - Table 12', time: '45 mins ago' }
+            ];
+
+            // Simulate real-time updates
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setEmpireData(prev => ({
+                        ...prev,
+                        revenueToday: prev.revenueToday + (Math.random() * 50),
+                        occupancy: Math.max(30, Math.min(95, prev.occupancy + (Math.random() - 0.5) * 8))
+                    }));
+                }, 5000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div style={{ paddingBottom: '80px', minHeight: '100vh' }}>
+                    {currentScreen === 'dashboard' && <DashboardScreen 
+                        empireData={empireData}
+                        revenueStreams={revenueStreams}
+                        onNavigate={setCurrentScreen}
+                        onShowBroadcast={() => setShowBroadcast(true)}
+                        onShowOverride={() => setShowOverride(true)}
+                    />}
+                    {currentScreen === 'approvals' && <ApprovalsScreen approvals={pendingApprovals} onBack={() => setCurrentScreen('dashboard')} />}
+                    {currentScreen === 'incidents' && <IncidentsScreen incidents={activeIncidents} onBack={() => setCurrentScreen('dashboard')} />}
+                    
+                    {showBroadcast && <BroadcastPanel onClose={() => setShowBroadcast(false)} />}
+                    {showOverride && <OverridePanel onClose={() => setShowOverride(false)} />}
+                    
+                    <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} />
+                </div>
+            );
+        }
+
+        function DashboardScreen({ empireData, revenueStreams, onNavigate, onShowBroadcast, onShowOverride }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    {/* Header */}
+                    <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '48px', marginBottom: '8px' }} className="crown-glow">👑</div>
+                        <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '4px' }}>
+                            God Mode
+                        </h1>
+                        <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                            Complete System Control
+                        </p>
+                    </div>
+
+                    {/* Financial Overview */}
+                    <div className="glass-dark" style={{ padding: '20px', marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '16px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '16px' }}>
+                            💰 Financial Overview
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Today</div>
+                                <div style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                    ${empireData.revenueToday.toFixed(0)}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>This Week</div>
+                                <div style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                    ${(empireData.revenueWeek / 1000).toFixed(1)}K
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Profit Margin</div>
+                                <div style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, color: '#06b6d4' }}>
+                                    {empireData.profitMargin}%
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Runway</div>
+                                <div style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, color: '#f59e0b' }}>
+                                    {empireData.runwayMonths}mo
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Revenue Streams */}
+                    <h2 style={{ fontSize: '18px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '12px' }}>
+                        📊 Revenue Breakdown
+                    </h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                        {revenueStreams.map(stream => (
+                            <div key={stream.category} className="glass-dark stat-card" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <h3 style={{ fontSize: '14px', fontWeight: 700 }}>{stream.category}</h3>
+                                    <span style={{ 
+                                        fontSize: '12px', 
+                                        color: stream.trend.startsWith('+') ? '#10b981' : '#ef4444',
+                                        fontWeight: 700
+                                    }}>
+                                        {stream.trend}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                        ${stream.today.toFixed(2)}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                        {stream.margin}% margin
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Alerts */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                        <button 
+                            className="glass-dark"
+                            onClick={() => onNavigate('approvals')}
+                            style={{
+                                padding: '16px',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                background: 'rgba(120, 53, 15, 0.4)',
+                                color: 'white',
+                                textAlign: 'left'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '24px' }}>📝</span>
+                                <span style={{
+                                    background: '#f59e0b',
+                                    color: 'white',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
+                                    fontWeight: 700
+                                }}>
+                                    {empireData.pendingApprovals}
+                                </span>
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: 700 }}>Approvals</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>Pending review</div>
+                        </button>
+
+                        <button 
+                            className="glass-dark"
+                            onClick={() => onNavigate('incidents')}
+                            style={{
+                                padding: '16px',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                background: 'rgba(120, 53, 15, 0.4)',
+                                color: 'white',
+                                textAlign: 'left'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '24px' }}>⚠️</span>
+                                <span style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
+                                    fontWeight: 700
+                                }}>
+                                    {empireData.activeIncidents}
+                                </span>
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: 700 }}>Incidents</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>Active issues</div>
+                        </button>
+                    </div>
+
+                    {/* God Mode Controls */}
+                    <h2 style={{ fontSize: '18px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '12px' }}>
+                        ⚡ System Controls
+                    </h2>
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                        <button className="btn btn-primary" onClick={onShowBroadcast} style={{ width: '100%', padding: '16px' }}>
+                            📢 Broadcast Message
+                        </button>
+                        <button className="btn btn-danger" onClick={onShowOverride} style={{ width: '100%', padding: '16px' }}>
+                            🔒 Emergency Override
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function ApprovalsScreen({ approvals, onBack }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                        ← Back
+                    </button>
+                    <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '20px' }}>
+                        📝 Pending Approvals
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {approvals.map(approval => (
+                            <div key={approval.id} className="glass-dark" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>{approval.type}</h3>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                            {approval.employee || approval.vendor}
+                                        </p>
+                                        {approval.amount && (
+                                            <p style={{ fontSize: '14px', color: '#10b981', marginTop: '4px' }}>
+                                                ${approval.amount.toFixed(2)}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <span style={{
+                                        padding: '4px 12px',
+                                        background: approval.priority === 'high' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        color: approval.priority === 'high' ? '#ef4444' : '#f59e0b',
+                                        height: 'fit-content'
+                                    }}>
+                                        {approval.priority.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '12px' }}>
+                                    {approval.time}
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-success" style={{ flex: 1, padding: '8px', fontSize: '12px' }}>
+                                        ✓ Approve
+                                    </button>
+                                    <button className="btn btn-danger" style={{ flex: 1, padding: '8px', fontSize: '12px' }}>
+                                        ✗ Deny
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function IncidentsScreen({ incidents, onBack }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                        ← Back
+                    </button>
+                    <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '20px' }}>
+                        ⚠️ Active Incidents
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {incidents.map(incident => (
+                            <div key={incident.id} className="glass-dark" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>{incident.type}</h3>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                            {incident.desc}
+                                        </p>
+                                    </div>
+                                    <span style={{
+                                        padding: '4px 12px',
+                                        background: incident.severity === 'high' ? 'rgba(239, 68, 68, 0.2)' : 
+                                                   incident.severity === 'medium' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(6, 182, 212, 0.2)',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        color: incident.severity === 'high' ? '#ef4444' : 
+                                               incident.severity === 'medium' ? '#f59e0b' : '#06b6d4',
+                                        height: 'fit-content'
+                                    }}>
+                                        {incident.severity.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '12px' }}>
+                                    {incident.time}
+                                </div>
+                                <button className="btn btn-primary" style={{ width: '100%', padding: '10px', fontSize: '12px' }}>
+                                    Resolve Incident
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function BroadcastPanel({ onClose }) {
+            return (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
+                    <div className="glass-dark" style={{ padding: '32px', maxWidth: '400px', border: '2px solid #f59e0b' }}>
+                        <h2 style={{ fontSize: '24px', fontFamily: 'Orbitron', color: '#fbbf24', marginBottom: '16px', textAlign: 'center' }}>
+                            📢 Broadcast Message
+                        </h2>
+                        <p style={{ fontSize: '14px', marginBottom: '24px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)' }}>
+                            Send message to all staff members
+                        </p>
+                        <textarea 
+                            placeholder="Type your message..."
+                            style={{
+                                width: '100%',
+                                height: '120px',
+                                padding: '16px',
+                                background: 'rgba(0, 0, 0, 0.4)',
+                                border: '2px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontFamily: 'Rajdhani',
+                                fontSize: '16px',
+                                resize: 'none',
+                                marginBottom: '24px',
+                                outline: 'none'
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+                            <button className="btn btn-primary" style={{ flex: 1 }}>Send</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function OverridePanel({ onClose }) {
+            return (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
+                    <div className="glass-dark" style={{ padding: '32px', maxWidth: '400px', border: '2px solid #ef4444' }}>
+                        <h2 style={{ fontSize: '24px', fontFamily: 'Orbitron', color: '#ef4444', marginBottom: '16px', textAlign: 'center' }}>
+                            🔒 Emergency Override
+                        </h2>
+                        <p style={{ fontSize: '14px', marginBottom: '24px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)' }}>
+                            Critical system controls
+                        </p>
+                        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>🚨 Lockdown All Zones</button>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>⚡ Emergency Shutdown</button>
+                            <button className="btn btn-danger" style={{ width: '100%' }}>🔒 Lock All Stations</button>
+                        </div>
+                        <button className="btn btn-secondary" onClick={onClose} style={{ width: '100%' }}>Cancel</button>
+                    </div>
+                </div>
+            );
+        }
+
+        function BottomNav({ currentScreen, onNavigate }) {
+            const navItems = [
+                { id: 'dashboard', label: 'Dashboard', emoji: '👑' },
+                { id: 'approvals', label: 'Approvals', emoji: '📝' },
+                { id: 'incidents', label: 'Incidents', emoji: '⚠️' }
+            ];
+
+            return (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(120, 53, 15, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderTop: '1px solid rgba(245, 158, 11, 0.3)',
+                    padding: '12px 16px',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        maxWidth: '430px',
+                        margin: '0 auto'
+                    }}>
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onNavigate(item.id)}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '8px 16px',
+                                    background: currentScreen === item.id ? 'rgba(245, 158, 11, 0.3)' : 'transparent',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    color: currentScreen === item.id ? '#fbbf24' : 'rgba(255, 255, 255, 0.6)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
+                                <div style={{ fontSize: '24px' }}>{item.emoji}</div>
+                                <span style={{ fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<OwnerApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

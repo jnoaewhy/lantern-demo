@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management App - The Lantern</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #083344 50%, #155e75 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        #root {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .bg-blobs {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            filter: blur(60px);
+            animation: blob 7s infinite;
+        }
+
+        .blob-1 {
+            top: -160px;
+            right: -160px;
+            width: 320px;
+            height: 320px;
+            background: #06b6d4;
+            opacity: 0.2;
+        }
+
+        .blob-2 {
+            bottom: -160px;
+            left: -160px;
+            width: 320px;
+            height: 320px;
+            background: #0ea5e9;
+            opacity: 0.2;
+            animation-delay: 3s;
+        }
+
+        .blob-3 {
+            top: 20%;
+            left: 20%;
+            width: 240px;
+            height: 240px;
+            background: #14b8a6;
+            opacity: 0.15;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes blob {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Tech grid overlay */
+        .tech-grid {
+            position: fixed;
+            inset: 0;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .tech-grid-cell {
+            border: 1px solid #06b6d4;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+        }
+
+        .glass-dark {
+            background: rgba(8, 51, 68, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 30px rgba(6, 182, 212, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(6, 182, 212, 0.2);
+            color: #67e8f9;
+            border: 1px solid #67e8f9;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #06b6d4, #0ea5e9);
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div class="tech-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gridTemplateRows: 'repeat(12, 1fr)', height: '100vh', width: '100%' }}>
+            {Array.from({length: 144}).map((_, i) => <div key={i} className="tech-grid-cell"></div>)}
+        </div>
+    </div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function ManagementApp() {
+            const [currentScreen, setCurrentScreen] = useState('dashboard');
+            const [venueData, setVenueData] = useState({
+                occupancy: 78,
+                revenueToday: 8247.50,
+                activeStations: 24,
+                totalStations: 28,
+                staffOnDuty: 12,
+                alerts: 2,
+                satisfaction: 94
+            });
+
+            const staff = [
+                { id: 1, name: 'Sarah Chen', role: 'Floor Manager', status: 'on_duty', performance: 98 },
+                { id: 2, name: 'Marcus Johnson', role: 'Gaming Tech', status: 'on_duty', performance: 95 },
+                { id: 3, name: 'Emily Rodriguez', role: 'Food Service', status: 'on_duty', performance: 92 },
+                { id: 4, name: 'David Kim', role: 'Security', status: 'on_duty', performance: 97 }
+            ];
+
+            const hardware = {
+                gamingStations: { active: 24, total: 28, status: 'good' },
+                karaokeRooms: { active: 8, total: 10, status: 'good' },
+                posSystems: { active: 6, total: 6, status: 'excellent' },
+                thermalPrinters: { active: 5, total: 6, status: 'warning' }
+            };
+
+            const revenueBreakdown = {
+                gaming: 3250.00,
+                karaoke: 2890.00,
+                foodBeverage: 1807.50,
+                merchandise: 300.00
+            };
+
+            const activityFeed = [
+                { id: 1, msg: 'Street Fighter tournament started - Station 5', time: '2 min ago', type: 'normal' },
+                { id: 2, msg: 'Large food order - Table 12 - $47.50', time: '5 min ago', type: 'normal' },
+                { id: 3, msg: 'Printer 3 low on paper', time: '8 min ago', type: 'warning' },
+                { id: 4, msg: 'Daily revenue milestone: $8,000+', time: '12 min ago', type: 'success' }
+            ];
+
+            // Simulate real-time updates
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setVenueData(prev => ({
+                        ...prev,
+                        occupancy: Math.max(30, Math.min(95, prev.occupancy + (Math.random() - 0.5) * 8)),
+                        revenueToday: prev.revenueToday + (Math.random() * 50)
+                    }));
+                }, 5000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div style={{ paddingBottom: '80px', minHeight: '100vh' }}>
+                    {currentScreen === 'dashboard' && <DashboardScreen venueData={venueData} revenueBreakdown={revenueBreakdown} activityFeed={activityFeed} onNavigate={setCurrentScreen} />}
+                    {currentScreen === 'staff' && <StaffScreen staff={staff} onBack={() => setCurrentScreen('dashboard')} />}
+                    {currentScreen === 'hardware' && <HardwareScreen hardware={hardware} onBack={() => setCurrentScreen('dashboard')} />}
+                    
+                    <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} />
+                </div>
+            );
+        }
+
+        function DashboardScreen({ venueData, revenueBreakdown, activityFeed, onNavigate }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    {/* Header */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#67e8f9', marginBottom: '4px' }}>
+                            📊 Command Center
+                        </h1>
+                        <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                            Real-time venue analytics
+                        </p>
+                    </div>
+
+                    {/* Key Metrics */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                        <div className="glass-dark stat-card" style={{ padding: '16px' }}>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Occupancy</div>
+                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900, color: '#06b6d4' }}>
+                                {Math.round(venueData.occupancy)}%
+                            </div>
+                        </div>
+                        <div className="glass-dark stat-card" style={{ padding: '16px' }}>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Revenue Today</div>
+                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                ${venueData.revenueToday.toFixed(0)}
+                            </div>
+                        </div>
+                        <div className="glass-dark stat-card" style={{ padding: '16px' }}>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Staff On Duty</div>
+                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900, color: '#f59e0b' }}>
+                                {venueData.staffOnDuty}
+                            </div>
+                        </div>
+                        <div className="glass-dark stat-card" style={{ padding: '16px' }}>
+                            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '4px' }}>Satisfaction</div>
+                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900, color: '#ec4899' }}>
+                                {venueData.satisfaction}%
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Revenue Breakdown */}
+                    <h2 style={{ fontSize: '18px', fontFamily: 'Orbitron', color: '#67e8f9', marginBottom: '12px' }}>
+                        💰 Revenue Streams
+                    </h2>
+                    <div className="glass-dark" style={{ padding: '16px', marginBottom: '20px' }}>
+                        {Object.entries(revenueBreakdown).map(([key, value]) => {
+                            const total = Object.values(revenueBreakdown).reduce((a, b) => a + b, 0);
+                            const percentage = (value / total) * 100;
+                            return (
+                                <div key={key} style={{ marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '14px', textTransform: 'capitalize' }}>
+                                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                                        </span>
+                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>
+                                            ${value.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="progress-bar">
+                                        <div className="progress-fill" style={{ width: `${percentage}%` }}></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                        <button className="btn btn-primary" onClick={() => onNavigate('staff')} style={{ padding: '16px', fontSize: '14px' }}>
+                            👥 Staff
+                        </button>
+                        <button className="btn btn-primary" onClick={() => onNavigate('hardware')} style={{ padding: '16px', fontSize: '14px' }}>
+                            🖥️ Hardware
+                        </button>
+                    </div>
+
+                    {/* Activity Feed */}
+                    <h2 style={{ fontSize: '18px', fontFamily: 'Orbitron', color: '#67e8f9', marginBottom: '12px' }}>
+                        📡 Live Activity
+                    </h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {activityFeed.map(activity => (
+                            <div key={activity.id} className="glass" style={{ padding: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '14px' }}>{activity.msg}</span>
+                                    <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>{activity.time}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function StaffScreen({ staff, onBack }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                        ← Back
+                    </button>
+                    <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#67e8f9', marginBottom: '20px' }}>
+                        👥 Staff Overview
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {staff.map(member => (
+                            <div key={member.id} className="glass-dark" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>{member.name}</h3>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>{member.role}</p>
+                                    </div>
+                                    <div style={{
+                                        padding: '4px 12px',
+                                        background: member.status === 'on_duty' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        color: member.status === 'on_duty' ? '#10b981' : '#ef4444',
+                                        height: 'fit-content'
+                                    }}>
+                                        {member.status === 'on_duty' ? '🟢 On Duty' : '🔴 Off Duty'}
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>Performance</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div className="progress-bar" style={{ width: '100px' }}>
+                                            <div className="progress-fill" style={{ width: `${member.performance}%` }}></div>
+                                        </div>
+                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#06b6d4' }}>{member.performance}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function HardwareScreen({ hardware, onBack }) {
+            return (
+                <div className="fade-in" style={{ padding: '20px' }}>
+                    <button className="btn btn-secondary" onClick={onBack} style={{ marginBottom: '20px', padding: '8px 16px', fontSize: '12px' }}>
+                        ← Back
+                    </button>
+                    <h1 style={{ fontSize: '28px', fontFamily: 'Orbitron', color: '#67e8f9', marginBottom: '20px' }}>
+                        🖥️ Hardware Status
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {Object.entries(hardware).map(([key, value]) => (
+                            <div key={key} className="glass-dark" style={{ padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <h3 style={{ fontSize: '16px', fontWeight: 700, textTransform: 'capitalize' }}>
+                                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                                    </h3>
+                                    <span style={{
+                                        padding: '4px 12px',
+                                        background: value.status === 'excellent' ? 'rgba(16, 185, 129, 0.2)' : 
+                                                   value.status === 'good' ? 'rgba(6, 182, 212, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        color: value.status === 'excellent' ? '#10b981' : 
+                                               value.status === 'good' ? '#06b6d4' : '#f59e0b'
+                                    }}>
+                                        {value.status.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                        {value.active} / {value.total} Active
+                                    </span>
+                                    <div className="progress-bar" style={{ width: '120px' }}>
+                                        <div className="progress-fill" style={{ width: `${(value.active / value.total) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function BottomNav({ currentScreen, onNavigate }) {
+            const navItems = [
+                { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
+                { id: 'staff', label: 'Staff', emoji: '👥' },
+                { id: 'hardware', label: 'Hardware', emoji: '🖥️' }
+            ];
+
+            return (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(8, 51, 68, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderTop: '1px solid rgba(6, 182, 212, 0.3)',
+                    padding: '12px 16px',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        maxWidth: '430px',
+                        margin: '0 auto'
+                    }}>
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onNavigate(item.id)}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '8px 16px',
+                                    background: currentScreen === item.id ? 'rgba(6, 182, 212, 0.3)' : 'transparent',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    color: currentScreen === item.id ? '#67e8f9' : 'rgba(255, 255, 255, 0.6)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
+                                <div style={{ fontSize: '24px' }}>{item.emoji}</div>
+                                <span style={{ fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ManagementApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
