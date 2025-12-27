@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Command - The Lantern</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        #root {
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Platinum atmosphere */
+        .bg-atmosphere {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .platinum-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            filter: blur(80px);
+            animation: float 7s infinite;
+        }
+
+        .blob-1 {
+            top: -160px;
+            right: -160px;
+            width: 320px;
+            height: 320px;
+            background: #cbd5e1;
+            opacity: 0.1;
+        }
+
+        .blob-2 {
+            bottom: -160px;
+            left: -160px;
+            width: 320px;
+            height: 320px;
+            background: #94a3b8;
+            opacity: 0.1;
+            animation-delay: 3s;
+        }
+
+        .blob-3 {
+            top: 30%;
+            left: 30%;
+            width: 240px;
+            height: 240px;
+            background: #64748b;
+            opacity: 0.05;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Subtle grid overlay */
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            opacity: 0.05;
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 50px, #64748b 50px, #64748b 51px),
+                repeating-linear-gradient(90deg, transparent, transparent 50px, #64748b 50px, #64748b 51px);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Glass morphism */
+        .glass {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+        }
+
+        .glass-hover {
+            transition: all 0.3s ease;
+        }
+
+        .glass-hover:hover {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(148, 163, 184, 0.3);
+            box-shadow: 0 8px 32px rgba(148, 163, 184, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Button styles */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-broadcast {
+            background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        .btn-broadcast:hover {
+            box-shadow: 0 6px 30px rgba(220, 38, 38, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-override {
+            background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+            color: white;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 4px 20px rgba(71, 85, 105, 0.4);
+        }
+
+        .btn-override:hover {
+            border-color: rgba(148, 163, 184, 0.4);
+            box-shadow: 0 6px 30px rgba(71, 85, 105, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-excellent {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-good {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 24px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(148, 163, 184, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 4px;
+        }
+
+        /* Progress bars */
+        .progress-bar {
+            height: 6px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #cbd5e1, #64748b);
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        /* Responsive grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .content-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .content-grid {
+                grid-template-columns: repeat(12, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-atmosphere">
+        <div class="platinum-blob blob-1"></div>
+        <div class="platinum-blob blob-2"></div>
+        <div class="platinum-blob blob-3"></div>
+    </div>
+    <div class="grid-overlay"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // SHARED VENUE DATA - This is the single source of truth
+        const VENUE_DATA = {
+            revenue: {
+                today: 8247.50,
+                week: 54839.25,
+                month: 234567.80,
+                year: 1456789.50
+            },
+            customers: {
+                today: 247,
+                week: 1893,
+                current_occupancy: 267,
+                capacity: 400,
+                new_today: 89,
+                returning_today: 158
+            },
+            staff: {
+                on_duty: 12,
+                total: 28,
+                by_department: {
+                    'Gaming Tech': { count: 8, on_duty: 3 },
+                    'Food Service': { count: 6, on_duty: 3 },
+                    'Management': { count: 4, on_duty: 2 },
+                    'Security': { count: 3, on_duty: 2 },
+                    'Maintenance': { count: 7, on_duty: 2 }
+                }
+            },
+            equipment: {
+                gaming_stations: { active: 24, total: 28, utilization: 86 },
+                karaoke_rooms: { active: 8, total: 10, utilization: 72 },
+                pos_systems: { active: 6, total: 6, uptime: 99.8 }
+            },
+            metrics: {
+                profit_margin: 32.4,
+                equipment_health: 94,
+                satisfaction: 96.2,
+                pending_approvals: 7,
+                active_incidents: 2
+            }
+        };
+
+        function OwnerApp() {
+            const [currentView, setCurrentView] = useState('dashboard');
+            const [selectedDetail, setSelectedDetail] = useState(null);
+            const [showBroadcast, setShowBroadcast] = useState(false);
+            const [showOverride, setShowOverride] = useState(false);
+            const [realtimeData, setRealtimeData] = useState(VENUE_DATA);
+
+            // Simulate real-time updates
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setRealtimeData(prev => ({
+                        ...prev,
+                        revenue: {
+                            ...prev.revenue,
+                            today: prev.revenue.today + (Math.random() * 50)
+                        },
+                        customers: {
+                            ...prev.customers,
+                            current_occupancy: Math.max(200, Math.min(380, prev.customers.current_occupancy + (Math.random() - 0.5) * 10)),
+                            today: prev.customers.today + Math.floor(Math.random() * 2)
+                        }
+                    }));
+                }, 5000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const revenueStreams = [
+                { category: 'Gaming Stations', today: 3250.00, week: 21847.50, trend: '+15.2%', margin: 68 },
+                { category: 'Karaoke Rooms', today: 2890.00, week: 18234.75, trend: '+8.7%', margin: 71 },
+                { category: 'Food & Beverage', today: 1807.50, week: 11456.25, trend: '+12.4%', margin: 42 },
+                { category: 'Merchandise', today: 300.00, week: 3300.75, trend: '+22.1%', margin: 55 }
+            ];
+
+            const staffPerformance = [
+                { dept: 'Gaming Tech', count: 8, on_duty: 3, performance: 94.2, labor_cost: 2847.50, efficiency: 'excellent' },
+                { dept: 'Food Service', count: 6, on_duty: 3, performance: 91.8, labor_cost: 2145.00, efficiency: 'good' },
+                { dept: 'Management', count: 4, on_duty: 2, performance: 96.5, labor_cost: 4200.00, efficiency: 'excellent' },
+                { dept: 'Security', count: 3, on_duty: 2, performance: 98.1, labor_cost: 1950.00, efficiency: 'excellent' },
+                { dept: 'Maintenance', count: 7, on_duty: 2, performance: 89.7, labor_cost: 2680.00, efficiency: 'good' }
+            ];
+
+            const pendingApprovals = [
+                { id: 1, type: 'Time Off Request', employee: 'Sarah Chen', dept: 'Management', priority: 'medium', time: '2h ago', amount: null },
+                { id: 2, type: 'Equipment Purchase', dept: 'Gaming Tech', priority: 'high', time: '4h ago', amount: 2500.00 },
+                { id: 3, type: 'Vendor Contract', vendor: 'Ramen Supplier Co', priority: 'high', time: '1d ago', amount: 5000.00 },
+                { id: 4, type: 'Marketing Campaign', dept: 'Marketing', priority: 'medium', time: '2d ago', amount: 3500.00 }
+            ];
+
+            const activeIncidents = [
+                { id: 1, type: 'Equipment', severity: 'medium', desc: 'Printer 3 low on paper', location: 'Gaming Floor', time: '15m ago', status: 'in_progress' },
+                { id: 2, type: 'Customer', severity: 'low', desc: 'Billing dispute - Table 12', location: 'Food Area', time: '45m ago', status: 'pending' }
+            ];
+
+            return (
+                <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #000000 0%, #0f172a 50%, #000000 100%)', paddingBottom: '40px' }}>
+                    {/* Header */}
+                    <div style={{ 
+                        background: 'rgba(0, 0, 0, 0.8)', 
+                        backdropFilter: 'blur(20px)',
+                        borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                        padding: '24px',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 100
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{
+                                    width: '64px',
+                                    height: '64px',
+                                    background: 'linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)',
+                                    borderRadius: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 8px 32px rgba(148, 163, 184, 0.25)'
+                                }}>
+                                    <span style={{ fontSize: '32px' }}>👑</span>
+                                </div>
+                                <div>
+                                    <h1 className="gradient-text" style={{ fontSize: '32px', fontFamily: 'Orbitron', fontWeight: 900, letterSpacing: '1px' }}>
+                                        EMPIRE COMMAND
+                                    </h1>
+                                    <p style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>
+                                        Owner Override Access • All Systems
+                                    </p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <button className="btn btn-broadcast" onClick={() => setShowBroadcast(true)}>
+                                    📢 BROADCAST
+                                </button>
+                                <button className="btn btn-override" onClick={() => setShowOverride(true)}>
+                                    🛡️ OVERRIDE
+                                </button>
+                                <div style={{ position: 'relative' }}>
+                                    <button style={{
+                                        width: '48px',
+                                        height: '48px',
+                                        background: 'rgba(15, 23, 42, 0.4)',
+                                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                                        borderRadius: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
+                                    }}>
+                                        <span style={{ fontSize: '24px' }}>🔔</span>
+                                    </button>
+                                    {realtimeData.metrics.pending_approvals > 0 && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '-4px',
+                                            right: '-4px',
+                                            width: '24px',
+                                            height: '24px',
+                                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                            borderRadius: '50%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '12px',
+                                            fontWeight: 700
+                                        }}>
+                                            {realtimeData.metrics.pending_approvals}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Critical Metrics Strip */}
+                        <div className="stats-grid">
+                            {[
+                                { label: 'Today', value: `$${realtimeData.revenue.today.toFixed(2)}`, icon: '💰', trend: '+12.5%', color: '#10b981' },
+                                { label: 'This Week', value: `$${realtimeData.revenue.week.toLocaleString()}`, icon: '📈', trend: '+8.2%', color: '#3b82f6' },
+                                { label: 'Margin', value: `${realtimeData.metrics.profit_margin}%`, icon: '📊', trend: '+2.1%', color: '#a855f7' },
+                                { label: 'Occupancy', value: `${Math.round((realtimeData.customers.current_occupancy / realtimeData.customers.capacity) * 100)}%`, icon: '👥', trend: 'Peak', color: '#f59e0b' },
+                                { label: 'Staff', value: `${realtimeData.staff.on_duty}/${realtimeData.staff.total}`, icon: '👔', trend: 'Optimal', color: '#06b6d4' },
+                                { label: 'Satisfaction', value: `${realtimeData.metrics.satisfaction}%`, icon: '⭐', trend: '+1.4%', color: '#eab308' }
+                            ].map((metric, idx) => (
+                                <div key={idx} className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <div style={{ fontSize: '32px' }}>{metric.icon}</div>
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: metric.color }}>
+                                            {metric.trend}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, marginBottom: '4px' }}>
+                                        {metric.value}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        {metric.label}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div style={{ padding: '24px' }}>
+                        <div className="content-grid">
+                            {/* Revenue Streams - 8 columns */}
+                            <div style={{ gridColumn: 'span 8' }}>
+                                <div className="glass" style={{ padding: '24px' }}>
+                                    <h2 style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 700, marginBottom: '20px', color: '#e2e8f0' }}>
+                                        📊 Revenue Streams Analysis
+                                    </h2>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {revenueStreams.map((stream, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                className="glass glass-hover"
+                                                style={{ padding: '16px', cursor: 'pointer' }}
+                                                onClick={() => setSelectedDetail({ type: 'revenue', data: stream })}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                    <span style={{ fontSize: '16px', fontWeight: 700 }}>{stream.category}</span>
+                                                    <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
+                                                        <span style={{ color: '#10b981', fontWeight: 700 }}>{stream.trend}</span>
+                                                        <span style={{ color: '#94a3b8' }}>Margin: {stream.margin}%</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '12px' }}>
+                                                    <div>
+                                                        <span style={{ color: '#94a3b8' }}>Today: </span>
+                                                        <span style={{ fontFamily: 'Orbitron', fontWeight: 700 }}>${stream.today.toFixed(2)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span style={{ color: '#94a3b8' }}>Week: </span>
+                                                        <span style={{ fontFamily: 'Orbitron', fontWeight: 700 }}>${stream.week.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="progress-bar">
+                                                    <div className="progress-fill" style={{ width: `${(stream.today / realtimeData.revenue.today) * 100}%` }}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Customer Analytics - 4 columns */}
+                            <div style={{ gridColumn: 'span 4' }}>
+                                <div className="glass" style={{ padding: '24px', height: '100%' }}>
+                                    <h2 style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 700, marginBottom: '20px', color: '#e2e8f0' }}>
+                                        👥 Customer Intel
+                                    </h2>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                                Today's Traffic
+                                            </div>
+                                            <div style={{ fontSize: '36px', fontFamily: 'Orbitron', fontWeight: 900, marginBottom: '8px' }}>
+                                                {realtimeData.customers.today}
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                                <span style={{ color: '#10b981' }}>New: {realtimeData.customers.new_today}</span>
+                                                <span style={{ color: '#3b82f6' }}>Returning: {realtimeData.customers.returning_today}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                                Current Occupancy
+                                            </div>
+                                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                                {realtimeData.customers.current_occupancy}/{realtimeData.customers.capacity}
+                                            </div>
+                                        </div>
+
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                                Avg Spend
+                                            </div>
+                                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                                $33.40
+                                            </div>
+                                        </div>
+
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                                Lifetime Value
+                                            </div>
+                                            <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                                $847.50
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Staff Performance - 8 columns */}
+                            <div style={{ gridColumn: 'span 8' }}>
+                                <div className="glass" style={{ padding: '24px' }}>
+                                    <h2 style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 700, marginBottom: '20px', color: '#e2e8f0' }}>
+                                        👔 Staff Department Performance
+                                    </h2>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {staffPerformance.map((dept, idx) => (
+                                            <div 
+                                                key={idx}
+                                                className="glass glass-hover"
+                                                style={{ padding: '16px', cursor: 'pointer' }}
+                                                onClick={() => setSelectedDetail({ type: 'staff', data: dept })}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                    <div>
+                                                        <div style={{ fontSize: '16px', fontWeight: 700 }}>{dept.dept}</div>
+                                                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                                                            {dept.on_duty}/{dept.count} on duty
+                                                        </div>
+                                                    </div>
+                                                    <span className={`status-badge status-${dept.efficiency}`}>
+                                                        {dept.efficiency.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', fontSize: '13px' }}>
+                                                    <div>
+                                                        <div style={{ color: '#94a3b8' }}>Performance</div>
+                                                        <div style={{ fontFamily: 'Orbitron', fontWeight: 700, fontSize: '16px' }}>
+                                                            {dept.performance}%
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ color: '#94a3b8' }}>Labor Cost/Day</div>
+                                                        <div style={{ fontFamily: 'Orbitron', fontWeight: 700, fontSize: '16px' }}>
+                                                            ${dept.labor_cost}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ color: '#94a3b8' }}>Per Employee</div>
+                                                        <div style={{ fontFamily: 'Orbitron', fontWeight: 700, fontSize: '16px' }}>
+                                                            ${(dept.labor_cost / dept.count).toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Equipment Status - 4 columns */}
+                            <div style={{ gridColumn: 'span 4' }}>
+                                <div className="glass" style={{ padding: '24px', height: '100%' }}>
+                                    <h2 style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 700, marginBottom: '20px', color: '#e2e8f0' }}>
+                                        🖥️ Equipment ROI
+                                    </h2>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
+                                                Gaming Stations
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
+                                                Active: {realtimeData.equipment.gaming_stations.active}/{realtimeData.equipment.gaming_stations.total}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                Utilization: {realtimeData.equipment.gaming_stations.utilization}%
+                                            </div>
+                                        </div>
+
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
+                                                Karaoke Rooms
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
+                                                Active: {realtimeData.equipment.karaoke_rooms.active}/{realtimeData.equipment.karaoke_rooms.total}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                Utilization: {realtimeData.equipment.karaoke_rooms.utilization}%
+                                            </div>
+                                        </div>
+
+                                        <div className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
+                                                POS Systems
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
+                                                Active: {realtimeData.equipment.pos_systems.active}/{realtimeData.equipment.pos_systems.total}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                Uptime: {realtimeData.equipment.pos_systems.uptime}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Pending Approvals - 8 columns */}
+                            <div style={{ gridColumn: 'span 8' }}>
+                                <div className="glass" style={{ padding: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                        <h2 style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 700, color: '#e2e8f0' }}>
+                                            📝 Pending Approvals
+                                        </h2>
+                                        <span style={{ color: '#f59e0b', fontSize: '14px', fontWeight: 700 }}>
+                                            {pendingApprovals.length} items
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {pendingApprovals.map(approval => (
+                                            <div key={approval.id} className="glass glass-hover" style={{ padding: '16px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                            <span style={{ fontSize: '14px', fontWeight: 700 }}>{approval.type}</span>
+                                                            <span className={`status-badge status-${approval.priority}`}>
+                                                                {approval.priority.toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                                                            {approval.employee && `${approval.employee} • `}
+                                                            {approval.dept && `${approval.dept} • `}
+                                                            {approval.vendor && `${approval.vendor} • `}
+                                                            {approval.amount && `$${approval.amount.toLocaleString()} • `}
+                                                            {approval.time}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button style={{
+                                                        flex: 1,
+                                                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        padding: '10px',
+                                                        borderRadius: '8px',
+                                                        fontWeight: 700,
+                                                        fontSize: '12px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.3s ease'
+                                                    }}>
+                                                        ✓ APPROVE
+                                                    </button>
+                                                    <button style={{
+                                                        flex: 1,
+                                                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        padding: '10px',
+                                                        borderRadius: '8px',
+                                                        fontWeight: 700,
+                                                        fontSize: '12px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.3s ease'
+                                                    }}>
+                                                        ✗ DENY
+                                                    </button>
+                                                    <button style={{
+                                                        padding: '10px 20px',
+                                                        background: 'rgba(71, 85, 105, 0.5)',
+                                                        color: '#94a3b8',
+                                                        border: 'none',
+                                                        borderRadius: '8px',
+                                                        fontWeight: 700,
+                                                        fontSize: '12px',
+                                                        cursor: 'pointer'
+                                                    }}>
+                                                        INFO
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Active Incidents - 4 columns */}
+                            <div style={{ gridColumn: 'span 4' }}>
+                                <div className="glass" style={{ padding: '24px', height: '100%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                        <h2 style={{ fontSize: '20px', fontFamily: 'Orbitron', fontWeight: 700, color: '#e2e8f0' }}>
+                                            ⚠️ Active Incidents
+                                        </h2>
+                                        <span style={{ color: '#f59e0b', fontSize: '14px', fontWeight: 700 }}>
+                                            {activeIncidents.length}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {activeIncidents.map(incident => (
+                                            <div key={incident.id} className="glass glass-hover" style={{ padding: '16px', cursor: 'pointer' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <span className={`status-badge status-${incident.severity === 'high' ? 'high' : incident.severity === 'medium' ? 'medium' : 'good'}`}>
+                                                        {incident.severity.toUpperCase()}
+                                                    </span>
+                                                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>{incident.time}</span>
+                                                </div>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>
+                                                    {incident.desc}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '12px' }}>
+                                                    {incident.location}
+                                                </div>
+                                                <button style={{
+                                                    width: '100%',
+                                                    background: 'linear-gradient(135deg, #475569, #1e293b)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    fontWeight: 700,
+                                                    fontSize: '11px',
+                                                    cursor: 'pointer'
+                                                }}>
+                                                    VIEW DETAILS
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Modals */}
+                    {showBroadcast && <BroadcastModal onClose={() => setShowBroadcast(false)} />}
+                    {showOverride && <OverrideModal onClose={() => setShowOverride(false)} />}
+                    {selectedDetail && <DetailModal detail={selectedDetail} onClose={() => setSelectedDetail(null)} />}
+                </div>
+            );
+        }
+
+        function BroadcastModal({ onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal glass" onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #7f1d1d, #000000)', border: '2px solid rgba(239, 68, 68, 0.3)' }}>
+                        <div style={{ padding: '32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                    <div style={{ fontSize: '56px' }}>📢</div>
+                                    <div>
+                                        <h2 style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                            EMERGENCY BROADCAST
+                                        </h2>
+                                        <p style={{ color: '#fca5a5', fontSize: '14px' }}>Send instant alerts to staff</p>
+                                    </div>
+                                </div>
+                                <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '32px', cursor: 'pointer' }}>×</button>
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 700 }}>Recipients</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                    {['All Staff', 'Management Only', 'Gaming Tech', 'Food Service', 'Security', 'Custom'].map(opt => (
+                                        <button key={opt} style={{
+                                            padding: '12px',
+                                            background: 'rgba(71, 85, 105, 0.5)',
+                                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                                            borderRadius: '8px',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontWeight: 600
+                                        }}>
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 700 }}>Priority</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                    <button style={{ padding: '12px', background: '#dc2626', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, cursor: 'pointer' }}>CRITICAL</button>
+                                    <button style={{ padding: '12px', background: '#ea580c', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, cursor: 'pointer' }}>URGENT</button>
+                                    <button style={{ padding: '12px', background: '#ca8a04', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, cursor: 'pointer' }}>NORMAL</button>
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 700 }}>Message</label>
+                                <textarea style={{
+                                    width: '100%',
+                                    height: '120px',
+                                    padding: '16px',
+                                    background: 'rgba(0, 0, 0, 0.4)',
+                                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                                    borderRadius: '12px',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    resize: 'none'
+                                }} placeholder="Type your message..."></textarea>
+                            </div>
+                            <button className="btn btn-broadcast" style={{ width: '100%', padding: '16px', fontSize: '16px' }}>
+                                SEND BROADCAST NOW
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function OverrideModal({ onClose }) {
+            const controls = [
+                { icon: '⏰', label: 'Clock Staff In/Out', color: '#10b981' },
+                { icon: '💵', label: 'Comp Customer', color: '#3b82f6' },
+                { icon: '❌', label: 'Void Transaction', color: '#ef4444' },
+                { icon: '🔒', label: 'Lock Down Venue', color: '#a855f7' },
+                { icon: '⚡', label: 'Emergency Shutdown', color: '#ea580c' },
+                { icon: '📹', label: 'View All Cameras', color: '#06b6d4' },
+                { icon: '🔓', label: 'Unlock All Doors', color: '#84cc16' },
+                { icon: '📢', label: 'PA System Control', color: '#eab308' },
+                { icon: '⚙️', label: 'System Admin', color: '#64748b' }
+            ];
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal glass" onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #1e293b, #000000)', border: '2px solid rgba(148, 163, 184, 0.3)' }}>
+                        <div style={{ padding: '32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                    <div style={{ fontSize: '56px' }}>🛡️</div>
+                                    <div>
+                                        <h2 className="gradient-text" style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                            OWNER OVERRIDE
+                                        </h2>
+                                        <p style={{ color: '#94a3b8', fontSize: '14px' }}>Master access to all systems</p>
+                                    </div>
+                                </div>
+                                <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '32px', cursor: 'pointer' }}>×</button>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                {controls.map((control, idx) => (
+                                    <button key={idx} style={{
+                                        padding: '24px',
+                                        background: control.color,
+                                        border: 'none',
+                                        borderRadius: '16px',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        transition: 'all 0.3s ease'
+                                    }}>
+                                        <div style={{ fontSize: '32px' }}>{control.icon}</div>
+                                        <span style={{ fontSize: '12px', fontWeight: 700, textAlign: 'center' }}>{control.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '12px' }}>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <span style={{ fontSize: '20px' }}>⚠️</span>
+                                    <div>
+                                        <div style={{ color: '#eab308', fontWeight: 700, marginBottom: '4px' }}>Override Access Warning</div>
+                                        <div style={{ color: '#fde047', fontSize: '13px' }}>
+                                            All override actions are logged with timestamp, reason, and require owner authentication.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function DetailModal({ detail, onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal glass" onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg, #0f172a, #000000)' }}>
+                        <div style={{ padding: '32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                <h2 className="gradient-text" style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                    {detail.type === 'revenue' ? '💰 Revenue Details' : '👔 Staff Details'}
+                                </h2>
+                                <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '32px', cursor: 'pointer' }}>×</button>
+                            </div>
+                            <div className="glass" style={{ padding: '24px' }}>
+                                <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>
+                                    {detail.type === 'revenue' ? detail.data.category : detail.data.dept}
+                                </h3>
+                                {detail.type === 'revenue' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Today's Revenue</div>
+                                            <div style={{ fontSize: '32px', fontFamily: 'Orbitron', fontWeight: 900 }}>${detail.data.today.toFixed(2)}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Week's Revenue</div>
+                                            <div style={{ fontSize: '32px', fontFamily: 'Orbitron', fontWeight: 900 }}>${detail.data.week.toLocaleString()}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Trend</div>
+                                            <div style={{ fontSize: '24px', fontWeight: 700, color: '#10b981' }}>{detail.data.trend}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Profit Margin</div>
+                                            <div style={{ fontSize: '24px', fontWeight: 700 }}>{detail.data.margin}%</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Staff Count</div>
+                                            <div style={{ fontSize: '32px', fontFamily: 'Orbitron', fontWeight: 900 }}>
+                                                {detail.data.on_duty}/{detail.data.count}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Performance</div>
+                                            <div style={{ fontSize: '32px', fontFamily: 'Orbitron', fontWeight: 900 }}>{detail.data.performance}%</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Labor Cost</div>
+                                            <div style={{ fontSize: '24px', fontWeight: 700 }}>${detail.data.labor_cost.toFixed(2)}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Efficiency</div>
+                                            <span className={`status-badge status-${detail.data.efficiency}`}>{detail.data.efficiency.toUpperCase()}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<OwnerApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

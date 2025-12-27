@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff App - The Lantern</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #111827;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        #root {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: #111827;
+            position: relative;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .glass {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 12px;
+        }
+
+        .glass-hover {
+            transition: all 0.3s ease;
+        }
+
+        .glass-hover:hover {
+            background: rgba(31, 41, 55, 1);
+            border-color: rgba(75, 85, 99, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .notification {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .notification:hover {
+            transform: translateY(-2px);
+        }
+
+        .notification-critical {
+            background: rgba(127, 29, 29, 0.3);
+            border: 2px solid #dc2626;
+        }
+
+        .notification-high {
+            background: rgba(133, 77, 14, 0.3);
+            border: 2px solid #f59e0b;
+        }
+
+        .notification-medium {
+            background: rgba(30, 64, 175, 0.3);
+            border: 2px solid #3b82f6;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(75, 85, 99, 0.3);
+            padding: 12px 0 20px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(75, 85, 99, 0.2);
+        }
+
+        .nav-item.active {
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // SHARED VENUE DATA - Same as Owner App
+        const VENUE_DATA = {
+            revenue: {
+                today: 8247.50,
+                week: 54839.25
+            },
+            customers: {
+                today: 247,
+                current_occupancy: 267,
+                capacity: 400
+            },
+            staff: {
+                on_duty: 12,
+                total: 28
+            },
+            equipment: {
+                gaming_stations: { active: 24, total: 28 },
+                karaoke_rooms: { active: 8, total: 10 }
+            },
+            metrics: {
+                equipment_health: 94,
+                satisfaction: 96.2
+            }
+        };
+
+        function StaffApp() {
+            const [currentScreen, setCurrentScreen] = useState('dashboard');
+            const [selectedNotification, setSelectedNotification] = useState(null);
+            const [showEmergency, setShowEmergency] = useState(false);
+            const [showScanner, setShowScanner] = useState(false);
+
+            const staffInfo = {
+                name: 'Marcus Johnson',
+                role: 'Gaming Tech',
+                shift: '2PM-10PM',
+                id: 'LT-2047',
+                on_duty: true
+            };
+
+            const notifications = [
+                {
+                    id: 1,
+                    type: 'critical',
+                    title: 'Payment Failure - Customer Inside',
+                    message: 'Session #4A7B: Payment failed for pod reservation. Customer has active wristband.',
+                    session_id: '4A7B',
+                    time: '2 min ago',
+                    requires_action: true,
+                    location: 'Main Bar Area'
+                },
+                {
+                    id: 2,
+                    type: 'high',
+                    title: 'Hardware Issue',
+                    message: 'Exit RFID reader offline at main entrance',
+                    time: '5 min ago',
+                    requires_action: true,
+                    location: 'Main Exit'
+                },
+                {
+                    id: 3,
+                    type: 'medium',
+                    title: 'Physical Recovery Request',
+                    message: 'Customer needs help at charger station',
+                    time: '8 min ago',
+                    requires_action: false,
+                    location: 'Recovery Station 1'
+                }
+            ];
+
+            const tasks = [
+                { id: 1, title: 'Station 7 maintenance check', priority: 'high', area: 'Gaming Floor', time: '15 mins ago', status: 'pending' },
+                { id: 2, title: 'Restock printer paper - Station 3', priority: 'medium', area: 'Gaming Floor', time: '45 mins ago', status: 'pending' },
+                { id: 3, title: 'Help customer with DDR setup', priority: 'normal', area: 'Gaming Floor', time: '5 mins ago', status: 'pending' }
+            ];
+
+            return (
+                <div className="fade-in" style={{ minHeight: '100vh', paddingBottom: '100px' }}>
+                    {currentScreen === 'dashboard' && <Dashboard 
+                        staffInfo={staffInfo}
+                        notifications={notifications}
+                        venueData={VENUE_DATA}
+                        onNavigate={setCurrentScreen}
+                        onShowEmergency={() => setShowEmergency(true)}
+                        onShowScanner={() => setShowScanner(true)}
+                        onSelectNotification={setSelectedNotification}
+                    />}
+                    
+                    {currentScreen === 'alerts' && <AlertsScreen 
+                        notifications={notifications}
+                        onBack={() => setCurrentScreen('dashboard')}
+                        onSelectNotification={setSelectedNotification}
+                    />}
+                    
+                    {currentScreen === 'tasks' && <TasksScreen 
+                        tasks={tasks}
+                        onBack={() => setCurrentScreen('dashboard')}
+                    />}
+                    
+                    {currentScreen === 'profile' && <ProfileScreen 
+                        staffInfo={staffInfo}
+                        onBack={() => setCurrentScreen('dashboard')}
+                    />}
+
+                    {showEmergency && <EmergencyModal onClose={() => setShowEmergency(false)} />}
+                    {showScanner && <ScannerModal onClose={() => setShowScanner(false)} />}
+                    {selectedNotification && <NotificationDetailModal 
+                        notification={selectedNotification}
+                        onClose={() => setSelectedNotification(null)}
+                    />}
+
+                    <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} notifications={notifications} />
+                </div>
+            );
+        }
+
+        function Dashboard({ staffInfo, notifications, venueData, onNavigate, onShowEmergency, onShowScanner, onSelectNotification }) {
+            return (
+                <div>
+                    {/* Header */}
+                    <div style={{ background: '#1f2937', padding: '20px', borderBottom: '1px solid rgba(75, 85, 99, 0.3)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>
+                                    👔 Staff Command
+                                </h1>
+                                <p style={{ fontSize: '13px', color: '#9ca3af' }}>
+                                    {staffInfo.name} • {staffInfo.role}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        background: 'rgba(31, 41, 55, 0.8)',
+                                        borderRadius: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <span style={{ fontSize: '20px' }}>🔔</span>
+                                    </div>
+                                    {notifications.filter(n => n.requires_action).length > 0 && (
+                                        <div className="animate-pulse" style={{
+                                            position: 'absolute',
+                                            top: '-4px',
+                                            right: '-4px',
+                                            width: '12px',
+                                            height: '12px',
+                                            background: '#ef4444',
+                                            borderRadius: '50%'
+                                        }}></div>
+                                    )}
+                                </div>
+                                <div style={{
+                                    width: '12px',
+                                    height: '12px',
+                                    background: staffInfo.on_duty ? '#10b981' : '#6b7280',
+                                    borderRadius: '50%',
+                                    alignSelf: 'center'
+                                }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                            <div className="glass" style={{ padding: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '13px', color: '#9ca3af' }}>Occupancy</span>
+                                    <span style={{ fontSize: '32px' }}>👥</span>
+                                </div>
+                                <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                    {venueData.customers.current_occupancy}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                                    /{venueData.customers.capacity} capacity
+                                </div>
+                            </div>
+                            
+                            <div className="glass" style={{ padding: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '13px', color: '#9ca3af' }}>System Health</span>
+                                    <span style={{ fontSize: '32px' }}>🛡️</span>
+                                </div>
+                                <div style={{ fontSize: '28px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981' }}>
+                                    {venueData.metrics.equipment_health}%
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                                    All systems
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Critical Alert Banner */}
+                        {notifications.filter(n => n.type === 'critical').length > 0 && (
+                            <div style={{ 
+                                background: 'rgba(127, 29, 29, 0.3)',
+                                border: '2px solid #dc2626',
+                                borderRadius: '12px',
+                                padding: '16px',
+                                marginBottom: '24px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{ fontSize: '24px' }}>⚠️</span>
+                                    <div>
+                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#ef4444' }}>
+                                            {notifications.filter(n => n.type === 'critical').length} Critical Issue{notifications.filter(n => n.type === 'critical').length > 1 ? 's' : ''}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#fca5a5' }}>
+                                            Immediate attention required
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Recent Notifications */}
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px', color: '#e5e7eb' }}>
+                            🔔 Recent Alerts
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                            {notifications.slice(0, 3).map(notification => (
+                                <div 
+                                    key={notification.id}
+                                    className={`notification notification-${notification.type}`}
+                                    onClick={() => onSelectNotification(notification)}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ 
+                                            fontSize: '13px', 
+                                            fontWeight: 700,
+                                            color: notification.type === 'critical' ? '#ef4444' : 
+                                                   notification.type === 'high' ? '#f59e0b' : '#3b82f6'
+                                        }}>
+                                            {notification.title}
+                                        </span>
+                                        {notification.requires_action && (
+                                            <div className="animate-pulse" style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                background: '#ef4444',
+                                                borderRadius: '50%'
+                                            }}></div>
+                                        )}
+                                    </div>
+                                    <p style={{ fontSize: '12px', color: '#d1d5db', marginBottom: '8px' }}>
+                                        {notification.message}
+                                    </p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#9ca3af' }}>
+                                        <span>⏱️ {notification.time}</span>
+                                        {notification.location && (
+                                            <>
+                                                <span>•</span>
+                                                <span>📍 {notification.location}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Quick Actions */}
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px', color: '#e5e7eb' }}>
+                            ⚡ Quick Actions
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                            <button 
+                                className="btn btn-primary"
+                                onClick={onShowScanner}
+                                style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                            >
+                                <span style={{ fontSize: '32px' }}>📱</span>
+                                <span style={{ fontSize: '13px' }}>Scan Session</span>
+                            </button>
+                            
+                            <button 
+                                className="btn btn-danger"
+                                onClick={onShowEmergency}
+                                style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                            >
+                                <span style={{ fontSize: '32px' }}>🚨</span>
+                                <span style={{ fontSize: '13px' }}>Emergency</span>
+                            </button>
+                            
+                            <button 
+                                className="btn btn-primary"
+                                onClick={() => onNavigate('tasks')}
+                                style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                            >
+                                <span style={{ fontSize: '32px' }}>📋</span>
+                                <span style={{ fontSize: '13px' }}>My Tasks</span>
+                            </button>
+                            
+                            <button 
+                                className="btn btn-warning"
+                                style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                            >
+                                <span style={{ fontSize: '32px' }}>💳</span>
+                                <span style={{ fontSize: '13px' }}>Payments</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function AlertsScreen({ notifications, onBack, onSelectNotification }) {
+            return (
+                <div>
+                    <div style={{ background: '#1f2937', padding: '20px', borderBottom: '1px solid rgba(75, 85, 99, 0.3)' }}>
+                        <button 
+                            onClick={onBack}
+                            style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                color: '#10b981', 
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                marginBottom: '12px'
+                            }}
+                        >
+                            ← Back
+                        </button>
+                        <h1 style={{ fontSize: '24px', fontWeight: 700 }}>🔔 All Alerts</h1>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {notifications.map(notification => (
+                                <div 
+                                    key={notification.id}
+                                    className={`notification notification-${notification.type}`}
+                                    onClick={() => onSelectNotification(notification)}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ 
+                                            fontSize: '13px', 
+                                            fontWeight: 700,
+                                            color: notification.type === 'critical' ? '#ef4444' : 
+                                                   notification.type === 'high' ? '#f59e0b' : '#3b82f6'
+                                        }}>
+                                            {notification.title}
+                                        </span>
+                                        {notification.requires_action && (
+                                            <div className="animate-pulse" style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                background: '#ef4444',
+                                                borderRadius: '50%'
+                                            }}></div>
+                                        )}
+                                    </div>
+                                    <p style={{ fontSize: '12px', color: '#d1d5db', marginBottom: '8px' }}>
+                                        {notification.message}
+                                    </p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#9ca3af' }}>
+                                        <span>⏱️ {notification.time}</span>
+                                        {notification.location && (
+                                            <>
+                                                <span>•</span>
+                                                <span>📍 {notification.location}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function TasksScreen({ tasks, onBack }) {
+            return (
+                <div>
+                    <div style={{ background: '#1f2937', padding: '20px', borderBottom: '1px solid rgba(75, 85, 99, 0.3)' }}>
+                        <button 
+                            onClick={onBack}
+                            style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                color: '#10b981', 
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                marginBottom: '12px'
+                            }}
+                        >
+                            ← Back
+                        </button>
+                        <h1 style={{ fontSize: '24px', fontWeight: 700 }}>📋 My Tasks</h1>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {tasks.map(task => (
+                                <div key={task.id} className="glass" style={{ padding: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ 
+                                            fontSize: '11px', 
+                                            fontWeight: 700,
+                                            color: task.priority === 'high' ? '#ef4444' : 
+                                                   task.priority === 'medium' ? '#f59e0b' : '#10b981',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {task.priority}
+                                        </span>
+                                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>{task.time}</span>
+                                    </div>
+                                    <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>
+                                        {task.title}
+                                    </h3>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>📍 {task.area}</span>
+                                        <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '12px' }}>
+                                            Complete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function ProfileScreen({ staffInfo, onBack }) {
+            return (
+                <div>
+                    <div style={{ background: '#1f2937', padding: '20px', borderBottom: '1px solid rgba(75, 85, 99, 0.3)' }}>
+                        <button 
+                            onClick={onBack}
+                            style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                color: '#10b981', 
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                marginBottom: '12px'
+                            }}
+                        >
+                            ← Back
+                        </button>
+                        <h1 style={{ fontSize: '24px', fontWeight: 700 }}>👤 Profile</h1>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div className="glass" style={{ padding: '24px', marginBottom: '20px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                                <div style={{ fontSize: '64px', marginBottom: '8px' }}>👔</div>
+                                <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>
+                                    {staffInfo.name}
+                                </h2>
+                                <p style={{ fontSize: '14px', color: '#9ca3af' }}>{staffInfo.role}</p>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#9ca3af' }}>Employee ID</span>
+                                    <span style={{ fontFamily: 'Orbitron', fontWeight: 700 }}>{staffInfo.id}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#9ca3af' }}>Shift</span>
+                                    <span style={{ fontWeight: 700 }}>{staffInfo.shift}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#9ca3af' }}>Status</span>
+                                    <span style={{ 
+                                        color: staffInfo.on_duty ? '#10b981' : '#6b7280',
+                                        fontWeight: 700 
+                                    }}>
+                                        {staffInfo.on_duty ? '● On Duty' : '○ Off Duty'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function EmergencyModal({ onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div onClick={e => e.stopPropagation()} style={{ 
+                        background: 'linear-gradient(135deg, #7f1d1d, #1f2937)',
+                        border: '2px solid #dc2626',
+                        borderRadius: '20px',
+                        padding: '32px',
+                        maxWidth: '400px',
+                        width: '100%'
+                    }}>
+                        <h2 style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, color: '#ef4444', marginBottom: '12px', textAlign: 'center' }}>
+                            🚨 EMERGENCY ALERT
+                        </h2>
+                        <p style={{ fontSize: '14px', textAlign: 'center', marginBottom: '24px', color: '#fca5a5' }}>
+                            Select emergency type:
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                            <button className="btn btn-danger" style={{ width: '100%', padding: '16px' }}>
+                                🔥 Fire / Safety
+                            </button>
+                            <button className="btn btn-danger" style={{ width: '100%', padding: '16px' }}>
+                                🚑 Medical Emergency
+                            </button>
+                            <button className="btn btn-danger" style={{ width: '100%', padding: '16px' }}>
+                                ⚠️ Security Threat
+                            </button>
+                            <button className="btn btn-danger" style={{ width: '100%', padding: '16px' }}>
+                                🔧 Critical Equipment
+                            </button>
+                        </div>
+                        <button 
+                            onClick={onClose}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: 'rgba(75, 85, 99, 0.5)',
+                                border: '1px solid rgba(156, 163, 175, 0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function ScannerModal({ onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div onClick={e => e.stopPropagation()} style={{ 
+                        background: 'linear-gradient(135deg, #1f2937, #111827)',
+                        border: '2px solid #10b981',
+                        borderRadius: '20px',
+                        padding: '32px',
+                        maxWidth: '400px',
+                        width: '100%'
+                    }}>
+                        <h2 style={{ fontSize: '24px', fontFamily: 'Orbitron', fontWeight: 900, color: '#10b981', marginBottom: '12px', textAlign: 'center' }}>
+                            📱 SESSION SCANNER
+                        </h2>
+                        <div style={{ 
+                            background: 'rgba(31, 41, 55, 0.8)',
+                            border: '2px dashed rgba(75, 85, 99, 0.5)',
+                            borderRadius: '16px',
+                            padding: '48px',
+                            textAlign: 'center',
+                            marginBottom: '24px'
+                        }}>
+                            <div style={{ fontSize: '64px', marginBottom: '16px' }}>📷</div>
+                            <p style={{ fontSize: '14px', color: '#9ca3af' }}>
+                                Position wristband or QR code in view
+                            </p>
+                        </div>
+                        <button 
+                            className="btn btn-primary"
+                            style={{ width: '100%', padding: '16px', marginBottom: '12px' }}
+                        >
+                            Start Scanning
+                        </button>
+                        <button 
+                            onClick={onClose}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: 'rgba(75, 85, 99, 0.5)',
+                                border: '1px solid rgba(156, 163, 175, 0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function NotificationDetailModal({ notification, onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div onClick={e => e.stopPropagation()} style={{ 
+                        background: 'linear-gradient(135deg, #1f2937, #111827)',
+                        border: `2px solid ${notification.type === 'critical' ? '#dc2626' : notification.type === 'high' ? '#f59e0b' : '#3b82f6'}`,
+                        borderRadius: '20px',
+                        padding: '32px',
+                        maxWidth: '400px',
+                        width: '100%'
+                    }}>
+                        <h2 style={{ 
+                            fontSize: '20px', 
+                            fontWeight: 700, 
+                            marginBottom: '16px',
+                            color: notification.type === 'critical' ? '#ef4444' : notification.type === 'high' ? '#f59e0b' : '#3b82f6'
+                        }}>
+                            {notification.title}
+                        </h2>
+                        <div className="glass" style={{ padding: '16px', marginBottom: '20px' }}>
+                            <p style={{ fontSize: '14px', marginBottom: '12px', lineHeight: '1.6' }}>
+                                {notification.message}
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#9ca3af' }}>
+                                <div>⏱️ {notification.time}</div>
+                                <div>📍 {notification.location}</div>
+                                {notification.session_id && <div>🔖 Session: #{notification.session_id}</div>}
+                            </div>
+                        </div>
+                        {notification.requires_action && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                                <button className="btn btn-primary" style={{ width: '100%', padding: '14px' }}>
+                                    Resolve Issue
+                                </button>
+                                <button className="btn btn-warning" style={{ width: '100%', padding: '14px' }}>
+                                    Escalate
+                                </button>
+                            </div>
+                        )}
+                        <button 
+                            onClick={onClose}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: 'rgba(75, 85, 99, 0.5)',
+                                border: '1px solid rgba(156, 163, 175, 0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function BottomNav({ currentScreen, onNavigate, notifications }) {
+            const navItems = [
+                { id: 'dashboard', label: 'Home', icon: '🏠' },
+                { id: 'alerts', label: 'Alerts', icon: '🔔', badge: notifications.filter(n => n.requires_action).length },
+                { id: 'tasks', label: 'Tasks', icon: '📋' },
+                { id: 'profile', label: 'Profile', icon: '👤' }
+            ];
+
+            return (
+                <div className="bottom-nav">
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-around',
+                        maxWidth: '430px',
+                        margin: '0 auto',
+                        padding: '0 8px'
+                    }}>
+                        {navItems.map(item => (
+                            <div 
+                                key={item.id}
+                                className={`nav-item ${currentScreen === item.id ? 'active' : ''}`}
+                                onClick={() => onNavigate(item.id)}
+                                style={{ position: 'relative' }}
+                            >
+                                <div style={{ fontSize: '24px' }}>{item.icon}</div>
+                                <span style={{ fontSize: '11px', fontWeight: 600 }}>{item.label}</span>
+                                {item.badge > 0 && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '4px',
+                                        right: '8px',
+                                        width: '8px',
+                                        height: '8px',
+                                        background: '#ef4444',
+                                        borderRadius: '50%'
+                                    }}></div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<StaffApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
